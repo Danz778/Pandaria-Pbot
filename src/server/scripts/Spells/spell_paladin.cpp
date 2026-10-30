@@ -2804,8 +2804,6 @@ void AddSC_paladin_spell_scripts()
     new spell_script<spell_pal_crusader_strike>("spell_pal_crusader_strike");
     new spell_script<spell_pal_seal_of_truth_hotfix>("spell_pal_seal_of_truth_hotfix");
     new aura_script<spell_pal_censure_hotfix>("spell_pal_censure_hotfix");
-    new spell_pal_avenging_wrath();
-    new spell_pal_glyph_of_double_jeopardy_judgment();
     new spell_pal_blessing();
     new spell_pal_guardian();
     new spell_script<spell_pal_sword_of_light_damage_bonus_holy>("spell_pal_sword_of_light_damage_bonus_holy");

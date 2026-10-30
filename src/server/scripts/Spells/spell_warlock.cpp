@@ -4907,7 +4907,6 @@ void AddSC_warlock_spell_scripts()
     new spell_warl_kil_jaedens_cunning();
     new spell_warl_shield_of_shadow();
     new spell_script<spell_warl_flames_of_xoroth>("spell_warl_flames_of_xoroth");
-    new spell_warl_soul_link();
     new spell_script<spell_warl_decimate>("spell_warl_decimate");
     new spell_script<spell_warl_chaos_wave>("spell_warl_chaos_wave");
     new aura_script<spell_warl_dark_bargain_on_absorb>("spell_warl_dark_bargain_on_absorb");

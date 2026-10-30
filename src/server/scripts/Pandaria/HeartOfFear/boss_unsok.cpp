@@ -1693,7 +1693,6 @@ void AddSC_boss_unsok()
     new spell_script<spell_fling>("spell_fling");
     new spell_script<spell_fling_jump>("spell_fling_jump");
     new spell_burst_living_amber();
-    new spell_unsok_reshape_of_life();
     new aura_script<spell_unsok_reshape_of_life>("spell_unsok_reshape_of_life");
     new spell_unsok_parasitic_growth();
     new spell_amber_globule_detonation();

@@ -118,8 +118,8 @@ class boss_taran_zhu : public CreatureScript
                     instance->SendEncounterUnit(ENCOUNTER_FRAME_ENGAGE, me);
                 }
                 events.ScheduleEvent(EVENT_RISING_HATE, urand(25, 35) * IN_MILLISECONDS);
-                events.ScheduleEvent(EVENT_RING_OF_MALICE, urand(7.5, 12.5) * IN_MILLISECONDS);
-                events.ScheduleEvent(EVENT_SHA_BLAST, urand(2.5, 5) * IN_MILLISECONDS);
+                events.ScheduleEvent(EVENT_RING_OF_MALICE, urand(7500, 12500));
+                events.ScheduleEvent(EVENT_SHA_BLAST, urand(2500, 5000));
                 events.ScheduleEvent(EVENT_SUMMON_GRIPPING_HATRED, urand(10, 15) * IN_MILLISECONDS);
             }
 
@@ -131,7 +131,7 @@ class boss_taran_zhu : public CreatureScript
 
             void EnterEvadeMode(EvadeReason why = EVADE_REASON_OTHER) override
             {
-                BossAI::EnterEvadeMode();
+                BossAI::EnterEvadeMode(why);
                 if (instance)
                 {
                     instance->SendEncounterUnit(ENCOUNTER_FRAME_DISENGAGE, me);
@@ -200,7 +200,7 @@ class boss_taran_zhu : public CreatureScript
             {
                 if (who->ToPlayer())
                 {
-                    if (me->GetDistance(who) < 51.0f && !introStarted && instance->GetBossState(DATA_TARAN_ZHU) != DONE)
+                    if (instance && me->GetDistance(who) < 51.0f && !introStarted && instance->GetBossState(DATA_TARAN_ZHU) != DONE)
                     {
                         introStarted = true;
                         Talk(TALK_INTRO);

@@ -3944,7 +3944,6 @@ void AddSC_priest_spell_scripts()
     new spell_pri_shadowfiend();
     new spell_pri_strength_of_soul();
     new spell_script<spell_pri_spirit_shell>("spell_pri_spirit_shell");
-    new spell_pri_devouring_plague();
     new spell_pri_phantasm();
     new spell_pri_inner_fire_or_will();
     new spell_script<spell_pri_leap_of_faith>("spell_pri_leap_of_faith");

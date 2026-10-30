@@ -3134,7 +3134,6 @@ void AddSC_mage_spell_scripts()
     new spell_script<spell_mage_inferno_blast>("spell_mage_inferno_blast");
     new spell_script<spell_mage_inferno_blast_spread>("spell_mage_inferno_blast_spread");
     new spell_mage_arcane_brilliance();
-    new spell_mage_evocation();
     new spell_mage_cold_snap();
     new spell_mage_incanters_absorbtion_absorb();
     new spell_mage_incanters_absorbtion_manashield();

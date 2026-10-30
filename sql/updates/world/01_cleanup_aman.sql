@@ -1,7 +1,7 @@
 -- Dibuat dari DBErrors.log (Pandaria-Pbot). Jalankan pada database `world`.
 -- WAJIB backup dulu:  mysqldump -u USER -p world > world_backup.sql
--- Jalankan dengan:    mysql --force -u USER -p world < FILE.sql
---   (--force = kalau ada nama kolom beda di schema kamu, statement itu gagal saja dan lanjut ke berikutnya)
+-- Jalankan dengan:    mysql -u USER -p world < FILE.sql
+-- Periksa kecocokan schema sebelum menjalankan. Hentikan dan perbaiki jika ada error.
 -- Setelah selesai, restart worldserver dan cek DBErrors.log baru.
 -- Hanya menghapus/membenahi baris yang SUDAH diabaikan core (tidak mengubah gameplay).
 START TRANSACTION;

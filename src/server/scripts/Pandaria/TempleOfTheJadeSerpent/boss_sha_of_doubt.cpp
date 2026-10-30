@@ -43,11 +43,6 @@ class boss_sha_of_doubt : public CreatureScript
             EVENT_OPEN_DOOR            = 5
         };
 
-        enum eActions
-        {
-            ACTION_FIGMENT_DIE = 0
-        };
-
         enum eTalks
         {
             TALK_AGGRO   = 0,
@@ -61,11 +56,12 @@ class boss_sha_of_doubt : public CreatureScript
         {
             boss_sha_of_doubt_AI(Creature* creature) : BossAI(creature, DATA_SHA_OF_DOUBT) { }
 
-            uint32 figmentsCount, figmentsDie, delay;
+            std::set<ObjectGuid> figments;
             EventMap nonCombatEvents;
 
             void InitializeAI() override
             {
+                Reset();
                 me->CastSpell(me, SPELL_INVISIBILITY_DETECTION, false);
                 
                 if (instance)
@@ -96,32 +92,34 @@ class boss_sha_of_doubt : public CreatureScript
                         me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE);
                     }
                 }
-
-                Reset();
             }
 
             void Reset() override
             {
-                figmentsCount = 0;
-                figmentsDie   = 0;
-                delay         = 0;
-                events.Reset();
+                figments.clear();
+                _Reset();
+                me->RemoveAura(SPELL_BOUNDS_OF_REALITY);
                 Talk(TALK_RESET);
                 me->SetReactState(REACT_DEFENSIVE);
             }
 
-            void DoAction(int32 actionId) override
+            void JustSummoned(Creature* summon) override
             {
-                if (actionId == ACTION_FIGMENT_DIE)
-                {
-                    ++figmentsDie;
-                    if (figmentsDie == figmentsCount)
-                    {
-                        figmentsDie = 0;
-                        figmentsCount = 0;
-                        me->RemoveAura(SPELL_BOUNDS_OF_REALITY);
-                    }
-                }
+                BossAI::JustSummoned(summon);
+                if (summon->GetEntry() == NPC_FIGMENT_OF_DOUBT)
+                    figments.insert(summon->GetGUID());
+            }
+
+            void SummonedCreatureDies(Creature* summon, Unit* /*killer*/) override
+            {
+                if (figments.erase(summon->GetGUID()) && figments.empty())
+                    me->RemoveAura(SPELL_BOUNDS_OF_REALITY);
+            }
+
+            void SummonedCreatureDespawn(Creature* summon) override
+            {
+                BossAI::SummonedCreatureDespawn(summon);
+                SummonedCreatureDies(summon, nullptr);
             }
 
             void KilledUnit(Unit* victim) override
@@ -150,6 +148,9 @@ class boss_sha_of_doubt : public CreatureScript
 
             void JustEngagedWith(Unit* /*who*/) override
             {
+                if (!_JustEngagedWith())
+                    return;
+
                 Talk(TALK_AGGRO);
                 events.ScheduleEvent(EVENT_WITHER_WILL, 5 * IN_MILLISECONDS);
                 events.ScheduleEvent(EVENT_TOUCH_OF_NOTHINGNESS, 1 * IN_MILLISECONDS);
@@ -160,18 +161,11 @@ class boss_sha_of_doubt : public CreatureScript
                     instance->SendEncounterUnit(ENCOUNTER_FRAME_ENGAGE, me);
                     instance->SetData(DATA_SHA_OF_DOUBT, IN_PROGRESS);
                 }
-
-                delay = 0;
-                me->m_Events.Schedule(delay += 3000, 20, [this]()
-                {
-                    if (me->IsInCombat())
-                        _JustEngagedWith();
-                });
             }
 
             void EnterEvadeMode(EvadeReason why = EVADE_REASON_OTHER) override
             {
-                BossAI::EnterEvadeMode();
+                BossAI::EnterEvadeMode(why);
                 if (instance)
                 {
                     instance->SendEncounterUnit(ENCOUNTER_FRAME_DISENGAGE, me);
@@ -209,6 +203,9 @@ class boss_sha_of_doubt : public CreatureScript
                 if (!UpdateVictim())
                     return;
 
+                if (me->HasUnitState(UNIT_STATE_CASTING))
+                    return;
+
                 while (uint32 eventId = events.ExecuteEvent())
                 {
                     switch (eventId)
@@ -216,11 +213,10 @@ class boss_sha_of_doubt : public CreatureScript
                         case EVENT_WITHER_WILL:
                             if (!me->HasAura(SPELL_BOUNDS_OF_REALITY))
                             {
-                                if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM))
-                                {
-                                    me->CastSpell(target, SPELL_WITHER_WILL, false);
-                                    me->CastSpell(target, SPELL_WITHER_WILL, false);
-                                }
+                                std::list<Unit*> targets;
+                                SelectTargetList(targets, 2, SELECT_TARGET_RANDOM, 0.0f, true);
+                                for (Unit* target : targets)
+                                    me->CastSpell(target, SPELL_WITHER_WILL, true);
                             }
                             events.ScheduleEvent(EVENT_WITHER_WILL, urand(4, 7) * IN_MILLISECONDS);
                             break;
@@ -233,22 +229,28 @@ class boss_sha_of_doubt : public CreatureScript
                         case EVENT_BOUNDS_OF_REALITY:
                         {
                             Talk(TALK_FIGMENT);
-                            me->CastSpell(me, SPELL_BOUNDS_OF_REALITY, false);
+                            me->CastSpell(me, SPELL_BOUNDS_OF_REALITY, true);
 
                             Map::PlayerList const& playerList = me->GetMap()->GetPlayers();
                             if (!playerList.isEmpty())
                             {
-                               figmentsCount = playerList.getSize();
                                for (Map::PlayerList::const_iterator i = playerList.begin(); i != playerList.end(); ++i)
                                {
                                    if (Player* plr = i->GetSource())
-                                       plr->CastSpell(plr, SPELL_FIGMENT_OF_DOUBT_2, false);
+                                       if (plr->IsAlive() && !plr->IsGameMaster() && me->IsWithinDistInMap(plr, 100.0f))
+                                           plr->CastSpell(plr, SPELL_FIGMENT_OF_DOUBT_2, true);
                                }
                             }
+                            // Summon callbacks track actual figments, including failed player casts.
+                            if (figments.empty())
+                                me->RemoveAura(SPELL_BOUNDS_OF_REALITY);
                             events.ScheduleEvent(EVENT_BOUNDS_OF_REALITY, 60 * IN_MILLISECONDS);
                             break;
                         }
                     }
+
+                    if (me->HasUnitState(UNIT_STATE_CASTING))
+                        break;
                 }
 
                 if (!me->HasAura(SPELL_BOUNDS_OF_REALITY))
@@ -281,11 +283,6 @@ class npc_figment_of_doubt : public CreatureScript
             EVENT_BLADE_SONG           = 8,
             EVENT_UNTAMED_FURY         = 9,
             EVENT_GLIMPSE_OF_MADNESS   = 10
-        };
-
-        enum eActions
-        {
-            ACTION_FIGMENT_DIE = 0
         };
 
         enum eSpells
@@ -353,6 +350,14 @@ class npc_figment_of_doubt : public CreatureScript
                 }
             }
 
+            void IsSummonedBy(Unit* /*summoner*/) override
+            {
+                if (instance)
+                    if (Creature* sha = instance->instance->GetCreature(instance->GetGuidData(DATA_SHA_OF_DOUBT)))
+                        if (sha->IsAIEnabled)
+                            sha->AI()->JustSummoned(me);
+            }
+
             void JustDied(Unit* killer) override
             {
                 me->CastSpell(me, SPELL_DROWNED_STATE, false);
@@ -365,11 +370,10 @@ class npc_figment_of_doubt : public CreatureScript
                         summoner->RemoveAura(SPELL_DRAW_DOUBT);
                 }
 
-                if (Creature* sha = Unit::GetCreature(*me, instance->GetGuidData(DATA_SHA_OF_DOUBT)))
-                {
-                    if (sha->IsAIEnabled)
-                        sha->AI()->DoAction(ACTION_FIGMENT_DIE);
-                }
+                if (instance)
+                    if (Creature* sha = instance->instance->GetCreature(instance->GetGuidData(DATA_SHA_OF_DOUBT)))
+                        if (sha->IsAIEnabled)
+                            sha->AI()->SummonedCreatureDies(me, killer);
             }
 
             void UpdateAI(uint32 diff) override
@@ -384,7 +388,7 @@ class npc_figment_of_doubt : public CreatureScript
                     switch (eventId)
                     {
                         case EVENT_GATHERING_DOUBT:
-                            if (me->GetAuraCount(SPELL_GATHERING_DOUBT_2) == 30)
+                            if (me->GetAuraCount(SPELL_GATHERING_DOUBT_2) >= 30)
                             {
                                 me->RemoveAura(SPELL_GATHERING_DOUBT);
                                 me->CastSpell(me, SPELL_RELEASE_DOUBT, false); 

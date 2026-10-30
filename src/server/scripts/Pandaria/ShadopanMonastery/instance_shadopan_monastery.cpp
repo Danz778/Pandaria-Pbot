@@ -123,6 +123,27 @@ class instance_shadopan_monastery : public InstanceMapScript
         {
             if (instance->IsChallengeDungeon())
                 SendChallengeInfo(player, SCENARIO_ID);
+
+            if (GetBossState(DATA_TARAN_ZHU) == IN_PROGRESS && !player->IsGameMaster())
+            {
+                if (!player->HasAura(SPELL_HATE))
+                    player->AddAura(SPELL_HATE, player);
+            }
+            else
+                ClearHate(player);
+        }
+
+        void ClearHate(Player* player)
+        {
+            player->RemoveAurasDueToSpell(SPELL_HATE);
+            player->RemoveAurasDueToSpell(SPELL_HAZE_OF_HATE);
+            player->RemoveAurasDueToSpell(SPELL_HAZE_OF_HATE_VISUAL);
+            player->SetPower(POWER_ALTERNATE_POWER, 0);
+        }
+
+        void OnPlayerLeave(Player* player) override
+        {
+            ClearHate(player);
         }
 
         void OnCreatureCreate(Creature* creature) override
@@ -270,7 +291,11 @@ class instance_shadopan_monastery : public InstanceMapScript
                             if (!PlayerList.isEmpty())
                             for (Map::PlayerList::const_iterator i = PlayerList.begin(); i != PlayerList.end(); ++i)
                             if (Player* player = i->GetSource())
-                                player->AddAura(SPELL_HATE, player);
+                            {
+                                ClearHate(player);
+                                if (!player->IsGameMaster())
+                                    player->AddAura(SPELL_HATE, player);
+                            }
                             break;
                         }
                         case FAIL:
@@ -282,9 +307,7 @@ class instance_shadopan_monastery : public InstanceMapScript
                                       for (Map::PlayerList::const_iterator i = PlayerList.begin(); i != PlayerList.end(); ++i)
                                           if (Player* player = i->GetSource())
                                           {
-                                               player->RemoveAurasDueToSpell(SPELL_HATE);
-                                               player->RemoveAurasDueToSpell(SPELL_HAZE_OF_HATE);
-                                               player->RemoveAurasDueToSpell(SPELL_HAZE_OF_HATE_VISUAL);
+                                               ClearHate(player);
                                           }
                             }
                             break;
@@ -295,9 +318,7 @@ class instance_shadopan_monastery : public InstanceMapScript
                                for (Map::PlayerList::const_iterator i = PlayerList.begin(); i != PlayerList.end(); ++i)
                                if (Player* player = i->GetSource())
                                {
-                                  player->RemoveAurasDueToSpell(SPELL_HATE);
-                                  player->RemoveAurasDueToSpell(SPELL_HAZE_OF_HATE);
-                                  player->RemoveAurasDueToSpell(SPELL_HAZE_OF_HATE_VISUAL);
+                                  ClearHate(player);
                                }
 
                             DoRespawnGameObject(instance->IsHeroic() ? taranZhuCacheH : taranZhuCache, 1 * DAY);
@@ -317,7 +338,7 @@ class instance_shadopan_monastery : public InstanceMapScript
             {
                 case DATA_DEFEATED_NOVICE:
                 {
-                    if (!--aliveNoviceCount)
+                    if (aliveNoviceCount && !--aliveNoviceCount)
                        if (Creature* referee = instance->GetCreature(snowdriftRefereeGUID))
                           if (referee->IsAIEnabled)
                               referee->AI()->DoAction(1); // ACTION_NOVICE_DONE
@@ -325,7 +346,7 @@ class instance_shadopan_monastery : public InstanceMapScript
                 }
                 case DATA_DEFEATED_MINIBOSS:
                 {
-                    if (!--aliveMinibossCount)
+                    if (aliveMinibossCount && !--aliveMinibossCount)
                     {
                         if (Creature* referee = instance->GetCreature(snowdriftRefereeGUID))
                            if (referee->IsAIEnabled)
@@ -354,8 +375,9 @@ class instance_shadopan_monastery : public InstanceMapScript
                         }
                         case DONE:
                         {
-                            if (Creature* archer = instance->GetCreature(firstArcherySet.back()))
-                                sCreatureTextMgr->SendChat(archer, 1, 0, CHAT_MSG_ADDON, LANG_ADDON, TEXT_RANGE_ZONE);
+                            if (!firstArcherySet.empty())
+                                if (Creature* archer = instance->GetCreature(firstArcherySet.back()))
+                                    sCreatureTextMgr->SendChat(archer, 1, 0, CHAT_MSG_ADDON, LANG_ADDON, TEXT_RANGE_ZONE);
 
                             for (auto &&itr : firstArcherySet)
                             {
@@ -388,8 +410,9 @@ class instance_shadopan_monastery : public InstanceMapScript
                         }
                         case DONE:
                         {
-                            if (Creature* archer = instance->GetCreature(secondArcherySet.back()))
-                                sCreatureTextMgr->SendChat(archer, 1, 0, CHAT_MSG_ADDON, LANG_ADDON, TEXT_RANGE_ZONE);
+                            if (!secondArcherySet.empty())
+                                if (Creature* archer = instance->GetCreature(secondArcherySet.back()))
+                                    sCreatureTextMgr->SendChat(archer, 1, 0, CHAT_MSG_ADDON, LANG_ADDON, TEXT_RANGE_ZONE);
 
                             for (auto &&itr : secondArcherySet)
                             {

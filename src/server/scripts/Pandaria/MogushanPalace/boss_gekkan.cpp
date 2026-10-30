@@ -100,7 +100,8 @@ class boss_gekkan : public CreatureScript
             {
                 for (auto&& itr : auiGekkanAdds)
                     if (Creature* GekkanProtector = GetClosestCreatureWithEntry(me, itr, 50.0f, true))
-                        m_uilGekkanAdds.push_back(GekkanProtector->GetGUID());
+                        if (std::find(m_uilGekkanAdds.begin(), m_uilGekkanAdds.end(), GekkanProtector->GetGUID()) == m_uilGekkanAdds.end())
+                            m_uilGekkanAdds.push_back(GekkanProtector->GetGUID());
             }
 
             void HandleAddDeath()
@@ -111,7 +112,10 @@ class boss_gekkan : public CreatureScript
 
             void JustEngagedWith(Unit* who) override
             {
-                DoZoneInCombat();
+                if (!_JustEngagedWith())
+                    return;
+
+                InitializeGekkan();
 
                 if (who)
                 {
@@ -204,6 +208,7 @@ class boss_gekkan : public CreatureScript
 
             void JustDied(Unit* /*killer*/) override
             {
+                _JustDied();
                 if (instance)
                     instance->SendEncounterUnit(ENCOUNTER_FRAME_DISENGAGE, me);
 
@@ -213,11 +218,11 @@ class boss_gekkan : public CreatureScript
 
             void EnterEvadeMode(EvadeReason why = EVADE_REASON_OTHER) override
             {
-                BossAI::EnterEvadeMode();
+                BossAI::EnterEvadeMode(why);
                 if (instance)
                 {
                     instance->SendEncounterUnit(ENCOUNTER_FRAME_DISENGAGE, me);
-                    instance->SetData(DATA_GEKKAN, FAIL);
+                    instance->SetData(TYPE_GEKKAN, FAIL);
                 }
                 summons.DespawnAll();
 

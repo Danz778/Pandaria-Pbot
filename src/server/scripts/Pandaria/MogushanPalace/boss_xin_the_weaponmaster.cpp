@@ -114,6 +114,8 @@ class boss_xin_the_weaponmaster : public CreatureScript
 
             void InitializeAI() override
             {
+                Reset();
+                m_bHasYelled = false;
                 me->ApplySpellImmune(0, IMMUNITY_EFFECT, SPELL_EFFECT_KNOCK_BACK, true);
                 me->ApplySpellImmune(0, IMMUNITY_EFFECT, SPELL_EFFECT_KNOCK_BACK_DEST, true);
                 me->ApplySpellImmune(0, IMMUNITY_EFFECT, SPELL_EFFECT_PULL, true);
@@ -305,6 +307,9 @@ class boss_xin_the_weaponmaster : public CreatureScript
 
             void JustEngagedWith(Unit* /*who*/) override
             {
+                if (!_JustEngagedWith())
+                    return;
+
                 events.ScheduleEvent(EVENT_RING_OF_FIRE, 15000);
                 events.ScheduleEvent(EVENT_GROUND_SLAM, urand(10000, 15000));
                 events.ScheduleEvent(EVENT_INCITING_ROAR, urand(15000, 25000));

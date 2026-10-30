@@ -286,6 +286,15 @@ class instance_temple_of_jade_serpent : public InstanceMapScript
                 }
             }
 
+            void OnCreatureRemove(Creature* creature) override
+            {
+                // Figments belong to players, so the boss does not receive their despawn callback.
+                if (creature->GetEntry() == NPC_FIGMENT_OF_DOUBT)
+                    if (Creature* sha = instance->GetCreature(shaGUID))
+                        if (sha->IsAIEnabled)
+                            sha->AI()->SummonedCreatureDespawn(creature);
+            }
+
             void OnUnitDeath(Unit* unit) override
             {
                 if (unit->ToCreature())

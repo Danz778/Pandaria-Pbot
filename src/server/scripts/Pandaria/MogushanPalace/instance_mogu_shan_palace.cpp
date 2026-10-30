@@ -142,8 +142,15 @@ class instance_mogu_shan_palace : public InstanceMapScript
                 {
                     case DATA_GEKKAN:
                         HandleGameObject(ObjectGuid::Empty, state == DONE, GetGameObjectFromStorage(GO_DOOR_AFTER_TRIAL));
-                        if (GameObject* pTreasure = instance->GetGameObject(m_uiAncientTreasureGuid))
-                            pTreasure->RemoveFlag(GAMEOBJECT_FIELD_FLAGS, GO_FLAG_INTERACT_COND);
+                        HandleGameObject(ObjectGuid::Empty, state == DONE, GetGameObjectFromStorage(GO_GEKKAN_TREASURE_DOOR));
+                        if (state == DONE)
+                            for (uint32 entry : { GO_ANCIENT_MOGU_TREASURE, GO_ANCIENT_MOGU_TREASURE_HC })
+                                if (GameObject* treasure = GetGameObjectFromStorage(entry))
+                                    treasure->RemoveFlag(GAMEOBJECT_FIELD_FLAGS, GO_FLAG_INTERACT_COND | GO_FLAG_NOT_SELECTABLE);
+                        break;
+                    case DATA_XIN_THE_WEAPONMASTER:
+                        HandleGameObject(ObjectGuid::Empty, state != IN_PROGRESS, GetGameObjectFromStorage(GO_DOOR_BEFORE_KING));
+                        HandleGameObject(ObjectGuid::Empty, state != IN_PROGRESS, GetGameObjectFromStorage(GO_DOOR_BEFORE_KING2));
                         break;
                 }
 
@@ -168,6 +175,15 @@ class instance_mogu_shan_palace : public InstanceMapScript
                     case GO_ANCIENT_MOGU_TREASURE_HC:
                         m_mGoEntryGuidMap.insert(std::make_pair(go->GetEntry(), go->GetGUID()));
                         go->SetFlag(GAMEOBJECT_FIELD_FLAGS, GO_FLAG_INTERACT_COND);
+                        if (go->GetEntry() == GO_DOOR_AFTER_TRIAL || go->GetEntry() == GO_GEKKAN_TREASURE_DOOR)
+                            HandleGameObject(ObjectGuid::Empty, GetBossState(DATA_GEKKAN) == DONE, go);
+                        else if (go->GetEntry() == GO_ANCIENT_MOGU_TREASURE || go->GetEntry() == GO_ANCIENT_MOGU_TREASURE_HC)
+                        {
+                            if (GetBossState(DATA_GEKKAN) == DONE)
+                                go->RemoveFlag(GAMEOBJECT_FIELD_FLAGS, GO_FLAG_INTERACT_COND | GO_FLAG_NOT_SELECTABLE);
+                        }
+                        else if (go->GetEntry() == GO_DOOR_BEFORE_KING || go->GetEntry() == GO_DOOR_BEFORE_KING2)
+                            HandleGameObject(ObjectGuid::Empty, GetBossState(DATA_XIN_THE_WEAPONMASTER) != IN_PROGRESS, go);
                         break;
                     case GO_USELESS_DOOR:
                         // dont need to use memory space for this
@@ -252,11 +268,20 @@ class instance_mogu_shan_palace : public InstanceMapScript
             std::string GetSaveData() override
             {
                 std::ostringstream saveStream;
-                saveStream << m_auiEncounter[0] << ' ' << m_auiEncounter[1] << ' ' << m_auiEncounter[2] << ' '
-                           << m_auiEncounter[3] << ' ' << m_auiEncounter[4] << ' ' << m_auiEncounter[5] << ' '
-                           << m_auiEncounter[6] << ' ' << m_auiEncounter[7] << ' ' << m_auiEncounter[8] << ' '
-                           << m_auiEncounter[9] << ' ' << m_auiEncounter[10] << ' ' << m_auiEncounter[11] << ' '
-                           << m_auiEncounter[12] << ' ' << m_auiEncounter[13];
+                // Preserve the fourteen-field save format while persisting BossAI transitions.
+                for (uint32 i = 0; i < MAX_TYPES; ++i)
+                {
+                    uint32 value = m_auiEncounter[i];
+                    if (i == TYPE_SHUFFLE_ORDER)
+                        value = GetBossState(DATA_TRIAL_OF_THE_KING);
+                    else if (i == TYPE_GEKKAN)
+                        value = GetBossState(DATA_GEKKAN);
+                    else if (i == TYPE_XIN)
+                        value = GetBossState(DATA_XIN_THE_WEAPONMASTER);
+                    if (i)
+                        saveStream << ' ';
+                    saveStream << value;
+                }
                 return saveStream.str();
             }
 
@@ -328,8 +353,7 @@ class instance_mogu_shan_palace : public InstanceMapScript
                         break;
                     }
                     case TYPE_XIN:
-                        HandleGameObject(ObjectGuid::Empty, type != IN_PROGRESS, GetGameObjectFromStorage(GO_DOOR_BEFORE_KING));
-                        HandleGameObject(ObjectGuid::Empty, type != IN_PROGRESS, GetGameObjectFromStorage(GO_DOOR_BEFORE_KING2));
+                        SetBossState(DATA_XIN_THE_WEAPONMASTER, EncounterState(data));
                         break;
                 }
             }
@@ -361,6 +385,8 @@ class instance_mogu_shan_palace : public InstanceMapScript
                 {
                     case TYPE_WIPE_FIRST_BOSS:
                     {
+                        if (GetBossState(DATA_TRIAL_OF_THE_KING) != DONE)
+                            SetBossState(DATA_TRIAL_OF_THE_KING, FAIL);
                         HandleGameObject(ObjectGuid::Empty, true, GetGameObjectFromStorage(GO_DOOR_BEFORE_TRIAL));
                         switch (data)
                         {
@@ -645,6 +671,10 @@ class instance_mogu_shan_palace : public InstanceMapScript
 
                         if (m_uiBossCount < 3)
                         {
+                            // Champions use separate IDs; the controller owns the encounter state.
+                            if (GetBossState(DATA_TRIAL_OF_THE_KING) == TO_BE_DECIDED)
+                                SetBossState(DATA_TRIAL_OF_THE_KING, NOT_STARTED);
+                            SetBossState(DATA_TRIAL_OF_THE_KING, IN_PROGRESS);
                             SetData(m_auiBossNumber[m_uiBossCount], 0);
                             HandleGameObject(ObjectGuid::Empty, false, GetGameObjectFromStorage(GO_DOOR_BEFORE_TRIAL));
                         }
@@ -821,6 +851,10 @@ class instance_mogu_shan_palace : public InstanceMapScript
                 for (uint8 i = 0; i < MAX_TYPES; ++i)
                     if (m_auiEncounter[i] == IN_PROGRESS)
                         m_auiEncounter[i] = NOT_STARTED;
+
+                SetBossState(DATA_TRIAL_OF_THE_KING, m_auiEncounter[TYPE_SHUFFLE_ORDER] == DONE ? DONE : NOT_STARTED);
+                SetBossState(DATA_GEKKAN, m_auiEncounter[TYPE_GEKKAN] == DONE ? DONE : NOT_STARTED);
+                SetBossState(DATA_XIN_THE_WEAPONMASTER, m_auiEncounter[TYPE_XIN] == DONE ? DONE : NOT_STARTED);
 
                 OUT_LOAD_INST_DATA_COMPLETE;
             }

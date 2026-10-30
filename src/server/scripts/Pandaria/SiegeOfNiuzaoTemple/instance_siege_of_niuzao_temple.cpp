@@ -73,12 +73,16 @@ class instance_siege_of_niuzao_temple : public InstanceMapScript
                 {
                     case GO_TEMPLE_INVIS_DOOR:
                         invisDoorGUID[invisDoorGUID[0] != 0] = go->GetGUID();
+                        if (GetBossState(BOSS_PAVALAK) == DONE)
+                            go->Delete();
                         break;
                     case GO_WIND_WALL:
                         AddDoor(go, true);
                         break;                    
                     case GO_FIRE_WALL:
                         vojakDoor = go->GetGUID();
+                        if (GetBossState(BOSS_VOJAK) == DONE)
+                            go->Delete();
                         break;
                     case GO_DOOR:
                         vojakDoorGUID = go->GetGUID();

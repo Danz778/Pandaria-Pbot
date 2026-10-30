@@ -113,6 +113,10 @@ class boss_ook_ook : public CreatureScript
 
             void InitializeAI() override
             {
+                // SPECIAL means the hozen event already unlocked the intro.
+                if (!instance || instance->GetBossState(DATA_OOK_OOK) != SPECIAL)
+                    Reset();
+
                 me->setActive(true);
                 me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
                 me->SetReactState(REACT_PASSIVE);
@@ -145,6 +149,9 @@ class boss_ook_ook : public CreatureScript
 
             void StartIntro()
             {
+                if (introDone)
+                    return;
+
                 introDone = true;
                 events.CancelEvent(EVENT_INTROCHECK);
 
@@ -190,9 +197,10 @@ class boss_ook_ook : public CreatureScript
 
             void EnterEvadeMode(EvadeReason why = EVADE_REASON_OTHER) override
             {
-                _EnterEvadeMode();
+                if (!_EnterEvadeMode(why))
+                    return;
 
-                events.Reset();
+                Reset();
 
                 me->RemoveAllAuras();
 

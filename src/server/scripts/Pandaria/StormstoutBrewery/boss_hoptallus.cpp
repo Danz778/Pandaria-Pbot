@@ -311,21 +311,26 @@ class boss_hoptallus : public CreatureScript
 
             void InitializeAI() override
             {
+                bool const resumeIntro = instance && instance->GetBossState(DATA_HOPTALLUS) == SPECIAL;
+                Reset();
+
                 if (Creature* bunny = GetClosestCreatureWithEntry(me, 45979, 45.f))
                     bunny->AddAura(SPELL_CARROT_DOOR, bunny);
 
                 me->setActive(true);
                 me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PC | UNIT_FLAG_PACIFIED);
 
-                introStarted = instance->GetBossState(DATA_HOPTALLUS) == SPECIAL ? true : false;
+                introStarted = resumeIntro;
 
-                if (instance->GetBossState(DATA_HOPTALLUS) == SPECIAL && me->IsAlive())
+                if (resumeIntro && me->IsAlive())
                     InitJump();
             }
 
             void Reset() override
             {
                 _Reset();
+                hoplingWaves = 0;
+                hopperWaves = 0;
             }
 
             void InitJump()
@@ -427,10 +432,10 @@ class boss_hoptallus : public CreatureScript
 
             void EnterEvadeMode(EvadeReason why = EVADE_REASON_OTHER) override
             {
-                _EnterEvadeMode();
+                if (!_EnterEvadeMode(why))
+                    return;
 
-                summons.DespawnAll();
-                events.Reset();
+                Reset();
 
                 me->ClearUnitState(UNIT_STATE_CANNOT_TURN);
                 me->AttackStop();

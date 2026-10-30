@@ -213,6 +213,7 @@ class boss_zorlok : public CreatureScript
 
             void InitializeAI() override
             {
+                _Reset();
                 me->SetUInt32Value(UNIT_FIELD_VIRTUAL_ITEM_ID, ZARTHIK_2H_WEAPON);
                 // Set Flying
                 me->SetCanFly(true);
@@ -227,6 +228,10 @@ class boss_zorlok : public CreatureScript
                 InFlyOrAfterLanding = true;
                 lastEcho = false;
                 inPulse = false;
+                exhaleTarget = 0;
+                sonicSpirals = 0;
+                CurrentEvent = 0;
+                clocksideRings = true;
                 wp          = 4;
                 PlatformMod = 0;
                 targetGUID = ObjectGuid::Empty;

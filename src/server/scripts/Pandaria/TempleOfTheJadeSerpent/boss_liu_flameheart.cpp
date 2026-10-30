@@ -93,6 +93,7 @@ class boss_liu_flameheart : public CreatureScript
 
             void InitializeAI() override
             {
+                Reset();
                 me->setActive(true);
                 Talk(TALK_INTRO);
                 me->CastSpell(me, SPELL_POSSESSED_BY_SHA, false);           
@@ -104,6 +105,7 @@ class boss_liu_flameheart : public CreatureScript
 
             void Reset() override
             {
+                _Reset();
                 inCombat = false;
                 me->SetReactState(REACT_AGGRESSIVE);
                 events.Reset();

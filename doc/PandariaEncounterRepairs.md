@@ -15,6 +15,10 @@ and client data for build 18414 are required for server and combat verification.
 | Mogu'shan Palace saves | The existing fourteen-number format is retained. BossAI states are written into the existing Trial/Gekkan/Xin slots and restored on load; in-progress encounters reset. Other eleven slots retain their existing meanings. |
 | Taran Zhu / Shado-Pan | Hatred starts clean, is restored for entering participants, and is cleared on wipe/completion/exit. GMs are excluded. Initial fractional-second timers retain their intended milliseconds. Empty archer sets and duplicate novice/miniboss notifications are safe. |
 | Niuzao Temple | Completed Vo'jak/Pa'valak barriers also disappear when game objects load after the saved encounter state. The Vo'jak bombing outro retains control of its separate door. |
+| Gate of the Setting Sun | Raigonn's declared room door is registered for encounter transitions and late creation. Random bombarder/stalker lookups return an empty GUID when no targets exist; removed stalkers are no longer cached. |
+| Ook-Ook / Hoptallus | Fresh boss states initialize before the first encounter transition. Wipes reset encounter state, summons and events, allowing room doors to reopen. Saved SPECIAL intros are preserved; repeated Ook-Ook intro actions are ignored, and Hoptallus wave counters initialize before precombat summons. |
+| Garalon / Zor'lok / Elegon / Sha of Fear | Base boss initialization runs before the first pull while retaining each boss's initial visibility, flight and immunity rules. Zor'lok and Sha of Fear also initialize combat counters previously set only after a reset. |
+| Liu Flameheart | Initialization invokes Reset, and Reset includes base boss state, summon and scheduler cleanup. Existing intro spell casts and phase initialization are retained. |
 | Archimonde | Protection of Elune uses a registered AuraScript loader and its exact spell binding is restored. |
 
 The spell registration cleanup also removes six redundant raw allocations whose
@@ -41,6 +45,12 @@ Apply through the normal world updater with the matching rebuilt core:
   instances and five creature templates to their registered C++ scripts, clears
   competing AIName values on those five templates, and restores four exact spell
   bindings. Other spell bindings, template stats, spawns and loot are preserved.
+- `2026_10_30_01_world_gate_stormstout_encounters.sql`: assigns Gate and
+  Stormstout instance controllers and the Ook-Ook/Hoptallus creature scripts.
+- `2026_10_30_02_world_pandaria_boss_initialization.sql`: assigns the three
+  affected raid controllers and the Garalon, Zor'lok, Elegon, Liu Flameheart and
+  Sha of Fear creature scripts. These two migrations only update existing
+  templates and clear competing AIName values on the seven affected creatures.
 
 Updates modify existing templates; they do not supply a missing base world DB.
 The optional cleanup remains a manual operation under `sql/optional/`; follow its
@@ -60,3 +70,12 @@ actual world DB: wipe/re-pull each encounter, disconnect during figments/hatred,
 kill/expire/despawn every figment, reload completed instances, check both Xin
 doors and both Gekkan chest difficulties, and verify loot, achievements and LFG
 completion. Review fresh DBErrors/worldserver logs for missing bindings or data.
+
+For the additional lifecycle repairs, test fresh and saved instances, both
+Stormstout intro sequences and wipe/re-pull behavior, and Raigonn's room door
+before/during/after combat. Garalon, Zor'lok and Elegon must retain their pre-event
+restrictions; verify Sha of Fear's first-pull thrash and terror sequences and
+Liu's summons after a wipe. The supplied build 18414 client data has been
+extracted locally, but a full world dump is still unavailable. Current new
+checks use syntax compilation, extracted-method regressions and synthetic MySQL
+fixtures; they do not establish in-game correctness or full retail parity.

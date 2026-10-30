@@ -237,6 +237,7 @@ class boss_garalon : public CreatureScript
 
             void InitializeAI() override 
             {
+                _Reset();
                 me->SetVisible(false);
                 me->SetReactState(REACT_PASSIVE);
                 me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);

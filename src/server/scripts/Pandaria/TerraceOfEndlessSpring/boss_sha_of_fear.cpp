@@ -271,10 +271,16 @@ class boss_sha_of_fear : public CreatureScript
 
             void InitializeAI() override
             {
+                _Reset();
                 me->setActive(true);
                 SetCombatMovement(false);
                 introDone = false;
                 isDuringP2Transition = false;
+                attacksCounter = 0;
+                attackCounterDread = 0;
+                terrorCounter = 0;
+                m_uiPhase = 0;
+                isSecondEvent = false;
                 delay      = 0;
                 prevStep   = 0;
                 curStep    = 1;

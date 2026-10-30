@@ -225,16 +225,14 @@ class instance_gate_of_the_setting_sun : public InstanceMapScript
 
             void OnCreatureRemove(Creature* creature) override
             {
-                if (creature->GetEntry() == NPC_KRITHUK_BOMBARDER)
+                switch (creature->GetEntry())
                 {
-                    for (std::list<ObjectGuid>::iterator it = bombarderGuids.begin(); it != bombarderGuids.end(); ++it)
-                    {
-                        if (*it == creature->GetGUID())
-                        {
-                            bombarderGuids.erase(it);
-                            break;
-                        }
-                    }
+                    case NPC_KRITHUK_BOMBARDER:
+                        bombarderGuids.remove(creature->GetGUID());
+                        break;
+                    case NPC_BOMB_STALKER:
+                        bombStalkerGuids.remove(creature->GetGUID());
+                        break;
                 }
             }
 
@@ -250,6 +248,7 @@ class instance_gate_of_the_setting_sun : public InstanceMapScript
                         break;
                     case GO_KIPTILAK_WALLS:
                     case GO_RIMAK_AFTER_DOOR:
+                    case GO_RAIGONN_DOOR:
                     case GO_RAIGONN_AFTER_DOOR:
                     case GO_KIPTILAK_EXIT_DOOR:
                         AddDoor(go, true);
@@ -555,9 +554,9 @@ class instance_gate_of_the_setting_sun : public InstanceMapScript
                     case NPC_WEAK_SPOT:
                         return raigonWeakGuid;
                     case DATA_RANDOM_BOMBARDER:
-                        return Trinity::Containers::SelectRandomContainerElement(bombarderGuids);
+                        return bombarderGuids.empty() ? ObjectGuid::Empty : Trinity::Containers::SelectRandomContainerElement(bombarderGuids);
                     case DATA_RANDOM_BOMB_STALKER:
-                        return Trinity::Containers::SelectRandomContainerElement(bombStalkerGuids);
+                        return bombStalkerGuids.empty() ? ObjectGuid::Empty : Trinity::Containers::SelectRandomContainerElement(bombStalkerGuids);
                     case DATA_CORNER_A:
                         return explosionTarget1GUID;
                     case DATA_CORNER_B:
@@ -689,4 +688,3 @@ void AddSC_instance_gate_of_the_setting_sun()
 {
     new instance_gate_of_the_setting_sun();
 }
-

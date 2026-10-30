@@ -261,6 +261,7 @@ class boss_elegon : public CreatureScript
 
             void InitializeAI() override
             {
+                _Reset();
                 me->setActive(true);
                 me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_IMMUNE_TO_PC | UNIT_FLAG_CAN_SWIM | UNIT_FLAG_NOT_SELECTABLE);
                 me->SetDisplayId(11686);

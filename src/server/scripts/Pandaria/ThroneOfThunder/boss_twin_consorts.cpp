@@ -1531,16 +1531,18 @@ struct npc_ice_comet : public ScriptedAI
         // Areatrigger have some issue with low duration and LoS
         scheduler.Schedule(Milliseconds(500), [this](TaskContext context)
         {
-            std::list<Player*> pList;
-            GetPlayerListInGrid(pList, me, 10.0f);
-
-            if (Creature* suen = ObjectAccessor::GetCreature(*me, me->GetInstanceScript() ? me->GetInstanceScript()->GetGuidData(DATA_TWIN_CONSORTS) : ObjectGuid::Empty))
+            Creature* suen = ObjectAccessor::GetCreature(*me, me->GetInstanceScript() ? me->GetInstanceScript()->GetGuidData(DATA_TWIN_CONSORTS) : ObjectGuid::Empty);
+            for (auto const& reference : me->GetMap()->GetPlayers())
             {
-                for (auto&& itr : pList)
-                    if (me->GetExactDist2d(itr) < 5.5f && !itr->IsWithinLOS(suen->GetPositionX(), suen->GetPositionY(), suen->GetPositionZ()))
-                        DoCast(itr, SPELL_ICY_SHADOWS_EFF, true);
-                    else
-                        itr->RemoveAurasDueToSpell(SPELL_ICY_SHADOWS_EFF, me->GetGUID());
+                Player* player = reference.GetSource();
+                if (!player)
+                    continue;
+
+                if (suen && player->IsAlive() && me->IsWithinDistInMap(player, 10.0f) && me->GetExactDist2d(player) < 5.5f &&
+                    !player->IsWithinLOS(suen->GetPositionX(), suen->GetPositionY(), suen->GetPositionZ()))
+                    DoCast(player, SPELL_ICY_SHADOWS_EFF, true);
+                else
+                    player->RemoveAurasDueToSpell(SPELL_ICY_SHADOWS_EFF, me->GetGUID());
             }
 
             context.Repeat(Milliseconds(500));
@@ -1549,6 +1551,11 @@ struct npc_ice_comet : public ScriptedAI
 
     void JustDied(Unit* /*killer*/) override
     {
+        scheduler.CancelAll();
+        for (auto const& reference : me->GetMap()->GetPlayers())
+            if (Player* player = reference.GetSource())
+                player->RemoveAurasDueToSpell(SPELL_ICY_SHADOWS_EFF, me->GetGUID());
+
         if (GameObject* tomb = ObjectAccessor::GetGameObject(*me, tombGUID))
             tomb->Delete();
     }

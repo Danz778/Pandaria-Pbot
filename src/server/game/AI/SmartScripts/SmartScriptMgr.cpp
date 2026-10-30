@@ -1303,7 +1303,7 @@ bool SmartAIMgr::IsTextValid(SmartScriptHolder const& e, uint32 id)
 
     if (!entry || !sCreatureTextMgr->TextExist(entry, uint8(id)))
     {
-        TC_LOG_ERROR("sql.sql", "SmartAIMgr: Entry %d SourceType %u Event %u Action %u using non-existent Text id %d, skipped.", e.entryOrGuid, e.GetScriptType(), e.source_type, e.GetActionType(), id);
+        TC_LOG_ERROR("sql.sql", "SmartAIMgr: Entry %d SourceType %u Event %u Action %u using non-existent Text id %d, skipped.", e.entryOrGuid, e.GetScriptType(), e.event_id, e.GetActionType(), id);
         return false;
     }
 
